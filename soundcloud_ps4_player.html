@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SoundCloud Player - PS4 Web App</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:18px;margin:0;background:#111;color:#eee;height:100vh;box-sizing:border-box}
+  header{width:100%;max-width:960px;text-align:center;margin-bottom:14px}
+  h1{font-size:20px;margin:0 0 6px}
+  p{margin:0 0 12px;color:#bbb;font-size:13px}
+  .card{width:100%;max-width:960px;background:#161616;padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.6)}
+  label{display:block;margin-bottom:6px;font-size:13px;color:#ccc}
+  input[type=text]{width:100%;padding:10px;border-radius:6px;border:1px solid #222;background:#0f0f0f;color:#eee;font-size:15px;box-sizing:border-box}
+  .row{display:flex;gap:8px;margin-top:10px}
+  button{padding:10px 12px;border-radius:6px;border:none;background:#2f88ff;color:white;font-weight:600;cursor:pointer}
+  button.secondary{background:#3a3a3a}
+  iframe{width:100%;height:160px;border:none;margin-top:12px;border-radius:8px;overflow:hidden}
+  .bigframe{height:60vh}
+  .note{font-size:12px;color:#9aa;margin-top:10px}
+  footer{margin-top:12px;color:#999;font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>SoundCloud "Web-App" für PS4</h1>
+  <p>Füge hier einen SoundCloud-Link ein (Track / Playlist / User / URL) und drücke „Laden“. Tip: kopiere die normale SoundCloud-URL (z. B. https://soundcloud.com/artist/track).</p>
+</header>
+
+<div class="card">
+  <label for="scurl">SoundCloud URL</label>
+  <input id="scurl" type="text" placeholder="https://soundcloud.com/artist/track" />
+  <div class="row">
+    <button id="loadBtn">Laden</button>
+    <button id="playBtn" class="secondary">Play</button>
+    <button id="autoplayBtn" class="secondary">Autoplay: Aus</button>
+    <button id="fullscreenBtn" class="secondary">Großer Player</button>
+  </div>
+  <div id="playerWrap">
+    <!-- iframe wird hier eingefügt -->
+  </div>
+  <div class="note">Hinweis: Autoplay hängt vom PS4-Browser ab — manchmal ist ein zusätzlicher Klick nötig.</div>
+</div>
+
+<footer>Speichere diese Datei auf einem PC und serviere sie per einfachem Webserver (siehe Anweisungen), dann öffne die Adresse im PS4-Browser.</footer>
+
+<script>
+const input = document.getElementById('scurl');
+const loadBtn = document.getElementById('loadBtn');
+const playBtn = document.getElementById('playBtn');
+const autoplayBtn = document.getElementById('autoplayBtn');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const playerWrap = document.getElementById('playerWrap');
+
+let iframe = null;
+let autoplay = false;
+let big = false;
+
+// letzte URL merken
+if(localStorage.getItem('sc_last')) input.value = localStorage.getItem('sc_last');
+
+function makeEmbed(url){
+  const encoded = encodeURIComponent(url.trim());
+  const src = 'https://w.soundcloud.com/player/?url=' + encoded + '&show_artwork=true&visual=false&buying=false&liking=true&download=false&sharing=true&auto_play=' + (autoplay? 'true':'false');
+  return '<iframe id="sc_iframe" allow="autoplay" src="' + src + '"></iframe>';
+}
+
+loadBtn.addEventListener('click', ()=>{
+  const url = input.value.trim();
+  if(!url){ alert('Bitte eine SoundCloud-URL einfügen.'); return; }
+  playerWrap.innerHTML = makeEmbed(url);
+  iframe = document.getElementById('sc_iframe');
+  localStorage.setItem('sc_last', url);
+});
+
+playBtn.addEventListener('click', ()=>{
+  if(!iframe){ alert('Bitte zuerst laden.'); return; }
+  try{
+    iframe.contentWindow.postMessage({method: 'play'}, '*');
+  }catch(e){
+    autoplay = true;
+    autoplayBtn.textContent = 'Autoplay: An';
+    playerWrap.innerHTML = makeEmbed(input.value.trim());
+    iframe = document.getElementById('sc_iframe');
+  }
+});
+
+autoplayBtn.addEventListener('click', ()=>{
+  autoplay = !autoplay;
+  autoplayBtn.textContent = 'Autoplay: ' + (autoplay? 'An':'Aus');
+});
+
+fullscreenBtn.addEventListener('click', ()=>{
+  big = !big;
+  const ifr = document.getElementById('sc_iframe');
+  if(ifr){
+    if(big){ ifr.classList.add('bigframe'); fullscreenBtn.textContent = 'Kleiner Player'; }
+    else{ ifr.classList.remove('bigframe'); fullscreenBtn.textContent = 'Großer Player'; }
+  }
+});
+
+if(input.value.trim() !== ''){
+  playerWrap.innerHTML = makeEmbed(input.value.trim());
+  iframe = document.getElementById('sc_iframe');
+}
+</script>
+</body>
+</html>
